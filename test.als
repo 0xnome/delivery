@@ -19,7 +19,7 @@ fact UneGrille
 	Grille<: cases in Grille one -> Case 
 }
 
-fact DisjointCasePosition
+fact ContraintesCases
 {
 	// Toutes les cases appartiennent ont des coordonées différentes
    all c1:Case, c2:Case | c1 != c2 => c1.x != c2.x && c1.y != c2.y
@@ -30,7 +30,7 @@ fact DisjointCasePosition
 
 sig Drone
 {
-	position: Case
+	position: Case one -> Time
 }
 
 one sig Entrepot
@@ -51,7 +51,12 @@ fact PositionReceptacle
 
 pred init [t: Time] 
 {
+	all d:Drone | d.position.t = Entrepot.position
+}
 
+fact simulation
+{
+	init[first]
 }
 
 pred a {}
