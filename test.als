@@ -14,14 +14,11 @@ sig Case
 	y: Int
 }
 
-// Toutes les cases appartiennent à une Grille
-fact UneGrille
-{
-	Grille<: cases in Grille one -> Case 
-}
-
 fact ContraintesCases
 {
+	// Toutes les cases appartiennent à une Grille
+	Grille<: cases in Grille one -> Case 
+
 	// Toutes les cases appartiennent ont des coordonées différentes
    all c1:Case, c2:Case | c1 != c2 => c1.x != c2.x || c1.y != c2.y
 
@@ -29,15 +26,29 @@ fact ContraintesCases
 	all c:Case | c.x >= 0 && c.y >= 0 && c.x <= 4 && c.y <= 4
 }
 
-sig Drone
-{
-	position: Case one -> Time
-}
-
 one sig Entrepot
 {
 	position: Case
 }
+
+sig Drone
+{
+	position: Case one -> Time,
+	commande: Commande
+}
+
+sig Commande
+{
+
+}
+
+//  Un drone peut transporter une ou zéro commande
+// et les commandes ne sont pas partagées
+fact UneCommandeMaxParDrone
+{
+	Drone<: commande in Drone lone -> Commande 
+}
+
 
 sig Receptacle
 {
@@ -68,8 +79,8 @@ fun distance[p1:Case, p2:Case]: Int
 
 pred deplacement[t, t':Time, d:Drone]
 {
-	// force le déplacement d'une case
-	distance[d.position.t, d.position.t'].eq[1]
+	// se déplace ou non
+	distance[d.position.t, d.position.t'] >= 0 && distance[d.position.t, d.position.t'] <= 1
 }
 
 // lance la simulation principale
@@ -84,4 +95,4 @@ fact simulation
 
 pred a {}
 
-run a for 4 but exactly 4 Drone
+run a for 4 but exactly 2 Drone
