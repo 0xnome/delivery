@@ -54,11 +54,13 @@ pred init [t: Time]
 	all r1:Receptacle, r2:Receptacle | r1 != r2 => r1.position != r2.position
 }
 
+// retourne la valeur absolue d'un nombre
 fun abs[x:Int]:Int
 {
 	x >= 0 => x else x.mul[-1]
 }
 
+// retourne la distance entre deux cases
 fun distance[p1:Case, p2:Case]: Int
 {
 	abs[p1.x - p2.x] + abs[p1.y - p2.y]
@@ -66,18 +68,20 @@ fun distance[p1:Case, p2:Case]: Int
 
 pred deplacement[t, t':Time, d:Drone]
 {
-	distance[d.position.t, d.position.t'] = 1
+	// force le déplacement d'une case
+	distance[d.position.t, d.position.t'].eq[1]
 }
 
+// lance la simulation principale
 fact simulation
 {
 	init[first]
-   /* all t:Time-last | let t'=t.next
+   all t:Time-last | let t'=t.next
 	{
 		all d:Drone | deplacement[t, t', d]
-    }*/
+    }
 }
 
 pred a {}
 
-run a for 4 but exactly 1  Drone
+run a for 4 but exactly 4 Drone
