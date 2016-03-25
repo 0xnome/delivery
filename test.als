@@ -54,6 +54,16 @@ pred init [t: Time]
 	all d:Drone | d.position.t = Entrepot.position
 }
 
+fun abs[x:Int]:Int
+{
+	x >= 0 => x else x.mul[-1]
+}
+
+fun distance[p1:Case, p2:Case]: Int
+{
+	abs[p1.x - p2.x] + abs[p1.y - p2.y]
+}
+
 fact simulation
 {
 	init[first]
