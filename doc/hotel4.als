@@ -143,13 +143,3 @@ fact NoIntervening
 check NoBadEntry for 3 but 2 Room, 2 Guest, 5 Time
 check NoBadEntry for 3 but 3 Room, 3 Guest, 7 Time
 check NoBadEntry for 5 but 20 Time
-
-pred a {
-    all t: Time, r: Room, g: Guest, k: Key |
-        let t' = t.next, 
-             o = FrontDesk.occupant.t[r]
-        {
-            entry [t, t', g, r, k] and some o => g in o
-        }
-}
-run a
