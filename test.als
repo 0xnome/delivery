@@ -27,7 +27,12 @@ sig Case
 one sig Entrepot
 {
 	position: Case,
-	commande: Commande
+	commandeCourante: Commande -> Time
+}
+
+one sig CommandesLivrees
+{
+	commandes: set Commande
 }
 
 sig Drone
@@ -60,7 +65,6 @@ fact ContraintesCases
 	all c:Case | c.x >= 0 && c.y >= 0 && c.x <= 4 && c.y <= 4
 }
 
-
 // 2 drones ne peuvent pas avoir la meme commande à l'instant t
 fact
 {
@@ -69,13 +73,6 @@ fact
 }
 
 // ************* FONCTIONS ************************
-
-// renvoie la prochaine commande du flux
-fun nextKey [c: Commande, cs: set Commande]: set Commande 
-{
-	min [c.nexts & cs]
-}
-
 
 // retourne la valeur absolue d'un nombre
 fun abs[x:Int]:Int
@@ -86,31 +83,50 @@ fun abs[x:Int]:Int
 // retourne la distance entre deux cases
 fun distance[p1:Case, p2:Case]: Int
 {
-	abs[p1.x - p2.x] + abs[p1.y - p2.y]
+	plus[	abs[minus[p1.x, p2.x]],abs[minus[p1.y,p2.y]]]
 }
 
 //*************** PREDICATS *****************
 
-// se déplace ou non
+pred pasDeplacementDrone[t, t' : Time, ds: set Drone]
+{
+		all d:Drone - ds | d.position.t = d.position.t'
+}
+
+pred pasChangementCommande[t, t' : Time, ds: set Drone]
+{
+		all d:Drone-ds | d.commande.t = d.commande.t'
+}
+
+// récupère une commande
+pred PrendreCommande[t, t':Time, d:Drone]
+{
+	//précondition
+	d.commande.t = none
+   
+	/*Postcondition:*/
+	let c = Entrepot.commandeCourante.t
+	{
+		d.commande.t' = c
+		Entrepot.commandeCourante.t' = c.next
+	}
+
+	pasDeplacementDrone[t, t', none]
+	pasChangementCommande[t, t', d]
+}
+
+// deplacement d'un drone
 pred Deplacement[t, t':Time, d:Drone]
 {
 	//précondition
 	d.commande.t != none
 
 	//post condition
-	distance[d.position.t, d.position.t'] < distance[d.position.t, d.commande.destination.position [t]] 
-			&& distance[d.position.t, d.position.t'] <= 1 && d.commande.t = d.commande.t'
-		
-}
+	distance[d.position.t', d.commande.destination.position [t]] < distance[d.position.t, d.commande.destination.position [t]] 
+	distance[d.position.t, d.position.t'] = 1
+	d.commande.t = d.commande.t'	
 
-// récupère une commande
-pred PrendreCommande[t, t':Time, d:Drone, c:Commande]
-{
-	//précondition
-	d.commande.t = none
-
-	//post condition
-	d.commande.t' = c
+	pasDeplacementDrone[t, t', d]
 }
 
 // Dépose une commande si le drone est sur le receptacle de la commande courante
@@ -121,6 +137,8 @@ pred DeposerCommande[t, t':Time, d:Drone]
 
 	//post condition
 	d.commande.t' = none
+
+	//pasDeplacementDrone[t, t', none]
 }
 
 // lance la simulation principale
@@ -129,15 +147,21 @@ fact simulation
 	init[first]
    all t:Time-last | let t'=t.next
 	{
-		 some d:Drone, c:Commande |
-			PrendreCommande[t, t', d, c] or
-			Deplacement[t, t', d] or
-			DeposerCommande[t, t', d]
+		 some d:Drone|
+			PrendreCommande[t, t', d]
+			// or Deplacement[t, t', d] 
+			// or DeposerCommande[t, t', d]
     }
 }
 
 pred init [t: Time] 
 {
+	// la commande courante est la première de la liste
+	Entrepot.commandeCourante.t = first
+	
+	//aucune commande n'est livrée
+	CommandesLivrees.commandes = none
+
 	// Tous les drones sont à l'entrepot au départ
 	all d:Drone | d.position.t = Entrepot.position
 
@@ -151,4 +175,4 @@ pred init [t: Time]
 
 pred a {}
 
-run a for 4 but exactly 1 Drone, exactly 2 Commande, exactly 10 Time
+run a for 4 but exactly 3 Drone, exactly 4 Commande, exactly 4 Time
