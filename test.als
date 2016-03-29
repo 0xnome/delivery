@@ -70,6 +70,8 @@ fact
 {
 	all d, d' :Drone | all t:Time | d != d' && d.commande.t != none
 														 => d.commande.t != d'.commande.t
+	all d, d' :Drone | all t:Time | d != d' && d.position.t != Entrepot.position 
+																	=> d.position.t != d'.position.t
 }
 
 // ************* FONCTIONS ************************
@@ -96,6 +98,11 @@ pred pasDeplacementDrone[t, t' : Time, ds: set Drone]
 pred pasChangementCommande[t, t' : Time, ds: set Drone]
 {
 		all d:Drone-ds | d.commande.t = d.commande.t'
+}
+
+pred pasChangementCommandeCouranteEntrepot[t, t' : Time]
+{
+	Entrepot.commandeCourante.t = Entrepot.commandeCourante.t'
 }
 
 // récupère une commande
@@ -127,6 +134,8 @@ pred Deplacement[t, t':Time, d:Drone]
 	d.commande.t = d.commande.t'	
 
 	pasDeplacementDrone[t, t', d]
+	pasChangementCommande[t, t', none]
+	pasChangementCommandeCouranteEntrepot[t, t']
 }
 
 // Dépose une commande si le drone est sur le receptacle de la commande courante
@@ -149,7 +158,7 @@ fact simulation
 	{
 		 some d:Drone|
 			PrendreCommande[t, t', d]
-			// or Deplacement[t, t', d] 
+			or Deplacement[t, t', d] 
 			// or DeposerCommande[t, t', d]
     }
 }
@@ -175,4 +184,4 @@ pred init [t: Time]
 
 pred a {}
 
-run a for 4 but exactly 3 Drone, exactly 4 Commande, exactly 4 Time
+run a for 4 but exactly 3 Drone, exactly 4 Commande, exactly 10 Time
