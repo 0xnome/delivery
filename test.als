@@ -90,14 +90,14 @@ fun distance[p1:Case, p2:Case]: Int
 
 //*************** PREDICATS *****************
 
-pred pasDeplacementDrone[t, t' : Time, ds: set Drone]
+pred pasDeplacementDrone[t, t' : Time, d:Drone]
 {
-		all d:Drone - ds | d.position.t = d.position.t'
+		d.position.t = d.position.t'
 }
 
-pred pasChangementCommande[t, t' : Time, ds: set Drone]
+pred pasChangementCommande[t, t' : Time, d:Drone]
 {
-		all d:Drone-ds | d.commande.t = d.commande.t'
+		d.commande.t = d.commande.t'
 }
 
 pred pasChangementCommandeCouranteEntrepot[t, t' : Time]
@@ -192,12 +192,12 @@ fact simulation
 	init[first]
    all t:Time-last | let t'=t.next
 	{
-		 some d:Drone|
-			PrendreCommande[t, t', d]
-			or Deplacement[t, t', d] 
-			or DeposerCommande[t, t', d]
-			or RetourEntrepot[t,t',d]
-			or Attendre[t,t',d]
+		 all d:Drone|
+			//PrendreCommande[t, t', d]
+			//or Deplacement[t, t', d] 
+			//or DeposerCommande[t, t', d]
+			//or RetourEntrepot[t,t',d]
+			//or Attendre[t,t',d]
     }
 }
 
