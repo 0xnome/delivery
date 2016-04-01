@@ -26,14 +26,10 @@ sig Case
 
 one sig Entrepot
 {
-	position: Case,
-	commandeCourante: Commande -> Time
+	position: Case
+	// commandeCourante: Commande -> Time
 }
 
-one sig CommandesLivrees
-{
-	commandes: set Commande -> Time
-}
 
 sig Drone
 {
@@ -44,6 +40,11 @@ sig Drone
 sig Commande
 {
 	destination: one Receptacle
+}
+
+one sig CommandesLivrees
+{
+	commandes: set Commande -> Time
 }
 
 sig Receptacle
@@ -100,51 +101,37 @@ pred pasChangementCommande[t, t' : Time, d:Drone]
 		d.commande.t = d.commande.t'
 }
 
-pred pasChangementCommandeCouranteEntrepot[t, t' : Time]
+pred pasDeCommandeLivree[t, t' : Time, d:Drone]
 {
-	Entrepot.commandeCourante.t = Entrepot.commandeCourante.t'
-}
-
-pred pasDeCommandeLivree[t, t' : Time]
-{
-	CommandesLivrees.commandes.t' = CommandesLivrees.commandes.t
+	d.commande.t not in CommandesLivrees.commandes.t'
 }
 
 // récupère une commande
 pred PrendreCommande[t, t':Time, d:Drone]
 {
 	//précondition
-	d.commande.t = none && d.position.t = Entrepot.position && Entrepot.commandeCourante.t != none
+	d.commande.t = none && d.position.t = Entrepot.position
    
 	/*Postcondition:*/
-	let c = Entrepot.commandeCourante.t
-	{
-		d.commande.t' = c
-		Entrepot.commandeCourante.t' = c.next
-	}
-
-	pasDeplacementDrone[t, t', none]
-	pasChangementCommande[t, t', d]
-	pasDeCommandeLivree[t, t']
+	d.commande.t' != none //&& d.commande.t' not in CommandesLivrees
+	pasDeplacementDrone[t, t', d]
 }
 
 // deplacement d'un drone
 pred Deplacement[t, t':Time, d:Drone]
 {
 	//précondition
-	d.commande.t != none
+	d.commande.t != none && d.position.t != d.commande.t.destination.position
 
 	//post condition
 	distance[d.position.t', d.commande.destination.position [t]] < distance[d.position.t, d.commande.destination.position [t]] 
 	distance[d.position.t, d.position.t'] = 1
 	d.commande.t = d.commande.t'	
 
-	pasDeplacementDrone[t, t', d]
-	pasChangementCommande[t, t', none]
-	pasChangementCommandeCouranteEntrepot[t, t']
-	pasDeCommandeLivree[t, t']
+	pasChangementCommande[t, t', d]
+	pasDeCommandeLivree[t, t', d]
 }
-
+/*
 // Dépose une commande si le drone est sur le receptacle de la commande courante
 pred DeposerCommande[t, t':Time, d:Drone]
 {
@@ -158,10 +145,10 @@ pred DeposerCommande[t, t':Time, d:Drone]
 
 	pasDeplacementDrone[t, t', none]
 	pasChangementCommande[t, t', d]
-	pasChangementCommandeCouranteEntrepot[t, t']
 	//pasDeCommandeLivree[t, t']
 }
-
+*/
+/*
 pred RetourEntrepot[t, t':Time, d:Drone]
 {
 	//precondition
@@ -176,36 +163,44 @@ pred RetourEntrepot[t, t':Time, d:Drone]
 	pasChangementCommandeCouranteEntrepot[t, t']
 	pasDeCommandeLivree[t, t']
 }
+*/
 
 pred Attendre[t, t' :Time, d:Drone]
 {
-	d.commande.t = none && d.position.t = Entrepot.position && Entrepot.commandeCourante.t = none
-	pasChangementCommande[t, t', none]
-	pasDeplacementDrone[t, t', none]
-	pasChangementCommandeCouranteEntrepot[t, t']
-	pasDeCommandeLivree[t, t']
+	pasChangementCommande[t, t', d]
+	pasDeplacementDrone[t, t', d]
 }
 
 // lance la simulation principale
 fact simulation
 {
 	init[first]
-   all t:Time-last | let t'=t.next
+   	all t:Time-last | let t'=t.next
 	{
-		 all d:Drone|
-			//PrendreCommande[t, t', d]
-			//or Deplacement[t, t', d] 
+		all d:Drone|
+			PrendreCommande[t, t', d]
+			or Deplacement[t, t', d] 
 			//or DeposerCommande[t, t', d]
 			//or RetourEntrepot[t,t',d]
 			//or Attendre[t,t',d]
+
+
+			//il faudrait ajouter la logique : 
+			// SI il n'a pas de commande
+			//		SI il n'est pas a l'entreprot
+			//			Retour entrepot
+			//		SINON 
+			//			il recupere un commande
+			// SINON
+			//		SI il est sur le receptacle
+			//			il livre
+			//		SINON
+			//			Il se déplace vers la livraison
     }
 }
 
 pred init [t: Time] 
 {
-	// la commande courante est la première de la liste
-	Entrepot.commandeCourante.t = first
-	
 	//aucune commande n'est livrée
 	CommandesLivrees.commandes.t = none
 
@@ -224,7 +219,10 @@ assert commandesLivrees {
 	CommandesLivrees.commandes.last != none
 }
 
+
+
 pred a {}
 
 run a for 4 but exactly 3 Drone, exactly 2 Commande, 4 Case, exactly 20 Time
 check commandesLivrees for 4 but exactly 3 Drone, exactly 4 Commande, exactly 20 Time
+run a for 3 but exactly 2 Drone, exactly 3 Time, exactly 2 Commande
