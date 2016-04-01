@@ -10,6 +10,7 @@ let DCAP = -1
 // capacité de la batterie
 let BCAP = -1
 
+
 // ************ Signatures *****************
 sig Time {}
 
@@ -63,7 +64,7 @@ fact ContraintesCases
    all c1:Case, c2:Case | c1 != c2 => c1.x != c2.x || c1.y != c2.y
 
 	// Les cases ont des positions entières et pas trop grandes
-	all c:Case | c.x >= 0 && c.y >= 0 && c.x <= 4 && c.y <= 4
+	all c:Case | c.x >= 0 && c.y >= 0 && c.x <= 8 && c.y <= 8
 }
 
 fact ContraintesLivraisons
@@ -88,7 +89,7 @@ fact ContraintesLivraisons
 }
 
 // 2 drones ne peuvent pas avoir la meme commande à l'instant t
-fact
+fact DroneSurUneMemeCase
 {
 	all d, d' :Drone | all t:Time | d != d' && d.commande.t != none
 														 => d.commande.t != d'.commande.t
@@ -127,38 +128,53 @@ pred pasDeCommandeLivree[t, t' : Time, d:Drone]
 	d.commande.t not in CommandesLivrees.commandes.t'
 }
 
+pred PrendreCommandePrecondition[t, t':Time, d:Drone]
+{
+	//précondition
+	d.commande.t = none && d.position.t = Entrepot.position
+}
+
 // récupère une commande
 pred PrendreCommande[t, t':Time, d:Drone]
 {
 	//précondition
-	d.commande.t = none && d.position.t = Entrepot.position
-   
+	PrendreCommandePrecondition[t, t', d]   
+
 	/*Postcondition:*/
-	d.commande.t' != none //&& d.commande.t' not in CommandesLivrees
+	d.commande.t' != none && d.commande.t' not in CommandesLivrees.commandes.t
 	pasDeplacementDrone[t, t', d]
+}
+
+pred DeplacementPrecondition[t, t':Time, d:Drone]
+{
+	//précondition
+	d.commande.t != none && d.position.t != d.commande.t.destination.position
 }
 
 // deplacement d'un drone
 pred Deplacement[t, t':Time, d:Drone]
 {
-	//précondition
-	d.commande.t != none && d.position.t != d.commande.t.destination.position
+	DeplacementPrecondition[t, t', d]
 
 	//post condition
 	distance[d.position.t', d.commande.destination.position [t]] < distance[d.position.t, d.commande.destination.position [t]] 
 	distance[d.position.t, d.position.t'] = 1
-	d.commande.t = d.commande.t'	
 
 	pasChangementCommande[t, t', d]
 	pasDeCommandeLivree[t, t', d]
 }
 
-// Dépose une commande si le drone est sur le receptacle de la commande courante
-pred DeposerCommande[t, t':Time, d:Drone]
+pred DeposerCommandePrecondition[t, t':Time, d:Drone]
 {
 	// précondition
 	d.commande.t != none && d.commande.t.destination.position = d.position.t
+}
 
+// Dépose une commande si le drone est sur le receptacle de la commande courante
+pred DeposerCommande[t, t':Time, d:Drone]
+{
+
+	DeposerCommandePrecondition[t,t',d]
 
 	//post condition
 	CommandesLivrees.commandes.t' = CommandesLivrees.commandes.t ++ d.commande.t
@@ -167,11 +183,16 @@ pred DeposerCommande[t, t':Time, d:Drone]
 	pasDeplacementDrone[t, t', d]
 }
 
-pred RetourEntrepot[t, t':Time, d:Drone]
+pred RetourEntrepotPrecondition[t, t':Time, d:Drone]
 {
 	//precondition
 	d.commande.t = none && d.position.t != Entrepot.position
-	
+}
+
+pred RetourEntrepot[t, t':Time, d:Drone]
+{
+	RetourEntrepotPrecondition[t,t',d]
+
 	//postcondition
 	distance[d.position.t', Entrepot.position] < distance[d.position.t,  Entrepot.position]
 	distance[d.position.t, d.position.t'] = 1
@@ -179,13 +200,30 @@ pred RetourEntrepot[t, t':Time, d:Drone]
 	pasChangementCommande[t, t', d]
 }
 
+pred PasDActionPossible[t, t' :Time, d:Drone]
+{
+	! DeplacementPrecondition[t, t', d] &&
+	! RetourEntrepotPrecondition[t, t', d] &&
+	! DeposerCommandePrecondition[t, t', d] &&
+	! PrendreCommandePrecondition[t, t', d]
+}
+
 pred Attendre[t, t' :Time, d:Drone]
 {
 
-	// Précondition
+	PasDActionPossible[t, t', d]
+
 	pasChangementCommande[t, t', d]
 	pasDeplacementDrone[t, t', d]
 	pasDeCommandeLivree[t, t', d]
+}
+
+pred Action[t, t' :Time, d:Drone]
+{
+	PrendreCommande[t, t', d]
+	or Deplacement[t, t', d] 
+	or DeposerCommande[t, t', d]
+	or RetourEntrepot[t,t',d]
 }
 
 // lance la simulation principale
@@ -195,24 +233,29 @@ fact simulation
    	all t:Time-last | let t'=t.next
 	{
 		all d:Drone|
-			PrendreCommande[t, t', d]
-			or Deplacement[t, t', d] 
-			or DeposerCommande[t, t', d]
-			or RetourEntrepot[t,t',d]
-			//or Attendre[t,t',d]
-
+			Action[t,t',d]
+			// or Attendre[t,t',d]
 
 			//il faudrait ajouter la logique : 
 			// SI il n'a pas de commande
 			//		SI il n'est pas a l'entreprot
-			//			Retour entrepot
-			//		SINON 
-			//			il recupere un commande
+			//			SI deplacement vers entrepot possible
+			//				Retour entrepot
+			//			SINON 
+			//				Attendre
+			//		SINON
+			//			SI il y a une commande
+			//				il recupere un commande
+			//			SINON
+			//				attendre
 			// SINON
 			//		SI il est sur le receptacle
-			//			il livre
+			//			il est l'ivre
 			//		SINON
-			//			Il se déplace vers la livraison
+			//			SI deplacement possible
+			//				Il se déplace vers la livraison
+			//			SINON
+			//				Attendre
     }
 }
 
@@ -242,4 +285,4 @@ pred a {}
 
 run a for 4 but exactly 3 Drone, exactly 2 Commande, 4 Case, exactly 20 Time
 check commandesLivrees for 4 but exactly 3 Drone, exactly 4 Commande, exactly 20 Time
-run a for 3 but exactly 1 Drone, exactly 15 Time, exactly 3 Commande
+run a for 3 but exactly 1 Drone, exactly 7 Time, exactly 1 Commande, 5 Int
