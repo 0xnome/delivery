@@ -66,6 +66,27 @@ fact ContraintesCases
 	all c:Case | c.x >= 0 && c.y >= 0 && c.x <= 4 && c.y <= 4
 }
 
+fact ContraintesLivraisons
+{
+	all t :Time-last | let t'= t.next
+	{
+		// Un commande livrée reste livrée
+		all c: Commande |
+			c in CommandesLivrees.commandes.t => c in CommandesLivrees.commandes.t'
+		}  
+}
+
+fact ContraintesLivraisons
+{
+	all t :Time-last | let t'= t.next
+	{
+	//Une commande n'etant pas dans un drone ne peut etre livrée
+		all c: Commande |
+			c not in Drone.commande.t && c not in CommandesLivrees.commandes.t 
+					=> c not in CommandesLivrees.commandes.t'
+	}  
+}
+
 // 2 drones ne peuvent pas avoir la meme commande à l'instant t
 fact
 {
@@ -131,24 +152,21 @@ pred Deplacement[t, t':Time, d:Drone]
 	pasChangementCommande[t, t', d]
 	pasDeCommandeLivree[t, t', d]
 }
-/*
+
 // Dépose une commande si le drone est sur le receptacle de la commande courante
 pred DeposerCommande[t, t':Time, d:Drone]
 {
 	// précondition
 	d.commande.t != none && d.commande.t.destination.position = d.position.t
 
-	CommandesLivrees.commandes.t' = CommandesLivrees.commandes.t ++ d.commande.t
 
 	//post condition
+	CommandesLivrees.commandes.t' = CommandesLivrees.commandes.t ++ d.commande.t
 	d.commande.t' = none
 
-	pasDeplacementDrone[t, t', none]
-	pasChangementCommande[t, t', d]
-	//pasDeCommandeLivree[t, t']
+	pasDeplacementDrone[t, t', d]
 }
-*/
-/*
+
 pred RetourEntrepot[t, t':Time, d:Drone]
 {
 	//precondition
@@ -156,19 +174,18 @@ pred RetourEntrepot[t, t':Time, d:Drone]
 	
 	//postcondition
 	distance[d.position.t', Entrepot.position] < distance[d.position.t,  Entrepot.position]
-	d.commande.t' = none
+	distance[d.position.t, d.position.t'] = 1
 
-	pasChangementCommande[t, t', none]
-	pasDeplacementDrone[t, t', d]
-	pasChangementCommandeCouranteEntrepot[t, t']
-	pasDeCommandeLivree[t, t']
+	pasChangementCommande[t, t', d]
 }
-*/
 
 pred Attendre[t, t' :Time, d:Drone]
 {
+
+	// Précondition
 	pasChangementCommande[t, t', d]
 	pasDeplacementDrone[t, t', d]
+	pasDeCommandeLivree[t, t', d]
 }
 
 // lance la simulation principale
@@ -180,8 +197,8 @@ fact simulation
 		all d:Drone|
 			PrendreCommande[t, t', d]
 			or Deplacement[t, t', d] 
-			//or DeposerCommande[t, t', d]
-			//or RetourEntrepot[t,t',d]
+			or DeposerCommande[t, t', d]
+			or RetourEntrepot[t,t',d]
 			//or Attendre[t,t',d]
 
 
@@ -225,4 +242,4 @@ pred a {}
 
 run a for 4 but exactly 3 Drone, exactly 2 Commande, 4 Case, exactly 20 Time
 check commandesLivrees for 4 but exactly 3 Drone, exactly 4 Commande, exactly 20 Time
-run a for 3 but exactly 2 Drone, exactly 3 Time, exactly 2 Commande
+run a for 3 but exactly 1 Drone, exactly 15 Time, exactly 3 Commande
