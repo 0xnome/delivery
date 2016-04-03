@@ -92,12 +92,13 @@ pred pasDeplacementDrone[t, t' : Time, d:Drone] {	d.position.t = d.position.t' }
 
 pred pasChangementCommande[t, t' : Time, d:Drone] {	d.commande.t = d.commande.t' }
 
-pred pasDeCommandeLivree[t, t' : Time, d:Drone] {d.commande.t not in CommandesLivrees.commandes.t'}
+pred pasDeCommandeLivree[t, t' : Time, d:Drone] { d.commande.t not in CommandesLivrees.commandes.t'}
 
 
 /****** Prédicats de Précondition *************/
 pred PrendreCommandePrecondition[t, t':Time, d:Drone]{
-	d.commande.t = none && d.position.t = Entrepot.position
+	// le drone n'a pas de commande et est sur l'entrepot
+	d.commande.t = none && d.position.t = Entrepot.position && 	(Commande - Drone.commande.t - CommandesLivrees.commandes.t != none)
 }
 
 pred DeplacementPrecondition[t, t':Time, d:Drone]{
@@ -107,7 +108,7 @@ pred DeplacementPrecondition[t, t':Time, d:Drone]{
 
 pred DeposerCommandePrecondition[t, t':Time, d:Drone] {
 	// le drone est sur la postion du receptacle de la commande
-	d.commande.t.destination.position = d.position.t
+	d.commande.t != none && d.commande.t.destination.position = d.position.t
 }
 
 pred RetourEntrepotPrecondition[t, t':Time, d:Drone]{
@@ -167,20 +168,16 @@ pred RetourEntrepot[t, t':Time, d:Drone] {
 
 // Vrai lorsqu'un drone ne peut rien faire
 pred PasDActionPossible[t, t' :Time, d:Drone] {
-	//not DeplacementPrecondition[t, t', d] &&
-	//not RetourEntrepotPrecondition[t, t', d] &&
-	//not DeposerCommandePrecondition[t, t', d] &&
-	//not PrendreCommandePrecondition[t, t', d] 
-	Commande - Drone.commande.t' - CommandesLivrees.commandes.t' = none && d.commande.t = none
-	//or some dr:Drone-d | d.position.t' = dr.position.t' && d.position.t' != Entrepot.position=> dr.position.t' = dr.position.t 
+	not ( DeplacementPrecondition[t, t', d]  or
+	 RetourEntrepotPrecondition[t, t', d] or
+	 DeposerCommandePrecondition[t, t', d] or
+	 PrendreCommandePrecondition[t, t', d] )
 }
 
 pred Attendre[t, t' :Time, d:Drone] {
-	PasDActionPossible[t, t', d]
-
+	PasDActionPossible[t,t',d]
 	pasChangementCommande[t, t', d]
 	pasDeplacementDrone[t, t', d]
-//	pasDeCommandeLivree[t, t', d]
 }
 
 pred Action[t, t' :Time, d:Drone]{
@@ -197,8 +194,7 @@ fact Simulation
    	all t:Time-last | let t'=t.next
 	{
 		all d:Drone|
-			Action[t,t',d]
-			or Attendre[t,t',d]
+			Attendre[t,t',d] or Action[t,t',d]
 
 			// SI il n'a pas de commande
 			//		SI il n'est pas a l'entreprot
@@ -245,4 +241,4 @@ pred a {}
 
 //run a for 4 but exactly 2 Drone, exactly 2 Commande, 4 Case, exactly 20 Time
 //check commandesLivrees for 4 but exactly 3 Drone, exactly 4 Commande, exactly 20 Time
-run a for 3 but exactly 3 Drone, exactly 8 Time, 2 Commande, 5 Int
+run a for 6 but exactly 2 Drone, exactly 15 Time, 2 Commande, 5 Int
