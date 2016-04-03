@@ -241,4 +241,5 @@ pred a {}
 
 //run a for 4 but exactly 2 Drone, exactly 2 Commande, 4 Case, exactly 20 Time
 //check commandesLivrees for 4 but exactly 3 Drone, exactly 4 Commande, exactly 20 Time
-run a for 6 but exactly 2 Drone, exactly 15 Time, 2 Commande, 5 Int
+//run a for 6 but exactly 2 Drone, exactly 15 Time, 2 Commande, 5 Int
+run a for exactly 2 Drone, exactly 6 Time, exactly 2 Commande, exactly 2 Case, exactly 1 Receptacle, 5 int
