@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<alloy>
+
+<view nodetheme="Martha">
+
+<projection> <type name="Time"/> </projection>
+
+<defaultnode/>
+
+<defaultedge/>
+
+<node>
+   <type name="Int"/>
+   <type name="String"/>
+   <type name="Time"/>
+   <type name="univ"/>
+   <type name="seq/Int"/>
+</node>
+
+<node color="Black">
+   <type name="Receptacle"/>
+</node>
+
+<node shape="Box" color="Blue">
+   <type name="CommandesLivrees"/>
+</node>
+
+<node shape="Ellipse" color="Yellow">
+   <type name="Case"/>
+</node>
+
+<node shape="Hexagon" color="White">
+   <type name="Grille"/>
+</node>
+
+<node shape="Inv Triangle" color="Red">
+   <type name="Drone"/>
+</node>
+
+<node shape="Lined Diamond" color="Gray">
+   <type name="Entrepot"/>
+</node>
+
+<node shape="Parallelogram" color="Green">
+   <type name="Commande"/>
+</node>
+
+<node style="Bold">
+   <set name="First" type="to/Ord"/>
+   <set name="Next" type="to/Ord"/>
+</node>
+
+<node visible="no">
+   <type name="co/Ord"/>
+   <type name="to/Ord"/>
+</node>
+
+<edge color="Gray" constraint="no">
+   <relation name="Next"> <type name="co/Ord"/> <type name="Commande"/> <type name="Commande"/> </relation>
+</edge>
+
+</view>
+
+</alloy>
