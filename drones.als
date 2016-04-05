@@ -115,6 +115,11 @@ pred DeposerCommandePrecondition[t, t':Time, d:Drone] {
 	d.commande.t != none && d.commande.t.destination.position = d.position.t
 }
 
+pred RechargementPrecondition[t,t':Time,d:Drone] {
+	// le drone est sur un réceptacle et n'a pas de commande pour ce réceptacle
+	
+}
+
 pred RetourEntrepotPrecondition[t, t':Time, d:Drone]{
 	// le drone n'a plus de commande et sa postion n'est pas celle de l'entrepot
 	d.commande.t = none && d.position.t != Entrepot.position
@@ -158,6 +163,16 @@ pred DeposerCommande[t, t':Time, d:Drone]{
 	pasDeplacementDrone[t, t', d]
 }
 
+// Rechargement sur un réceptacle
+pred Rechargement[t, t':Time, d:Drone]{
+	RechargementPrecondition[t,t',d]
+
+	// postcondition
+	pasChangementCommande[t,t',d]
+	pasDeplacementDrone[t, t', d]
+	pas CommandeLivree[t,t',d]
+}
+
 // retour à l'entrepot
 pred RetourEntrepot[t, t':Time, d:Drone] {
 
@@ -178,8 +193,11 @@ pred PasDActionPossible[t, t' :Time, d:Drone] {
 	 PrendreCommandePrecondition[t, t', d] )
 }
 
-pred Attendre[t, t' :Time, d:Drone] {
+pred AttentePlusCommande[t, t' :Time, d:Drone] {
+	// Si plus de livraisons à faire
 	PasDActionPossible[t,t',d]
+	//or MouvementImpossible[t,t',d]
+
 	pasChangementCommande[t, t', d]
 	pasDeplacementDrone[t, t', d]
 }
@@ -197,8 +215,9 @@ fact Simulation
 	init[first]
    	all t:Time-last | let t'=t.next
 	{
-		all d:Drone|
-			Attendre[t,t',d] or Action[t,t',d]
+		not (all d:Drone|
+			AttentePlusCommande[t,t',d] or Action[t,t',d]) =>
+		 (some d:Drone | Action[t,t',d])  
 
 			// SI il n'a pas de commande
 			//		SI il n'est pas a l'entreprot
@@ -248,3 +267,6 @@ pred a {}
 //check commandesLivrees for 4 but exactly 3 Drone, exactly 4 Commande, exactly 20 Time
 run a for 6 but exactly 2 Drone, exactly 15 Time, 3 Commande, 5 Int, exactly 3 Case
 //run a for exactly 2 Drone, exactly 6 Time, exactly 2 Commande, exactly 2 Case, exactly 1 Receptacle, 5 int
+//run a for 6 but exactly 2 Drone, exactly 15 Time, 2 Commande, 5 Int
+run a for 2 but exactly 2 Drone, exactly 8 Time, exactly 2 Commande, 5 Int, exactly 1 Receptacle, exactly 2 Case
+>>>>>>> e61738422aab1663918eba1b2db4b8fd7c87b7fa:test.als
