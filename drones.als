@@ -170,7 +170,6 @@ pred Rechargement[t, t':Time, d:Drone]{
 	// postcondition
 	pasChangementCommande[t,t',d]
 	pasDeplacementDrone[t, t', d]
-	pas CommandeLivree[t,t',d]
 }
 
 // retour à l'entrepot
@@ -215,9 +214,8 @@ fact Simulation
 	init[first]
    	all t:Time-last | let t'=t.next
 	{
-		not (all d:Drone|
-			AttentePlusCommande[t,t',d] or Action[t,t',d]) =>
-		 (some d:Drone | Action[t,t',d])  
+	all d:Drone|
+			AttentePlusCommande[t,t',d] or Action[t,t',d]
 
 			// SI il n'a pas de commande
 			//		SI il n'est pas a l'entreprot
@@ -268,5 +266,4 @@ pred a {}
 run a for 6 but exactly 2 Drone, exactly 15 Time, 3 Commande, 5 Int, exactly 3 Case
 //run a for exactly 2 Drone, exactly 6 Time, exactly 2 Commande, exactly 2 Case, exactly 1 Receptacle, 5 int
 //run a for 6 but exactly 2 Drone, exactly 15 Time, 2 Commande, 5 Int
-run a for 2 but exactly 2 Drone, exactly 8 Time, exactly 2 Commande, 5 Int, exactly 1 Receptacle, exactly 2 Case
->>>>>>> e61738422aab1663918eba1b2db4b8fd7c87b7fa:test.als
+check commandesLivrees for 6 but exactly 2 Drone, exactly 8 Time, exactly 2 Commande, 5 Int, exactly 1 Receptacle
