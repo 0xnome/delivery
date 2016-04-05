@@ -30,7 +30,9 @@ sig Drone {
 	commande:  Commande lone -> Time
 }
 
-sig Commande {destination: one Receptacle}
+sig Commande {
+	destination: one Receptacle
+}
 
 one sig CommandesLivrees {
 	commandes: set Commande -> Time
@@ -60,7 +62,7 @@ fact ContraintesLivraisons {
     	//Une commande n'etant pas dans un drone ne peut etre livrée
 		all c: Commande |
 			c not in Drone.commande.t && c not in CommandesLivrees.commandes.t 
-					=> c not in CommandesLivrees.commandes.t'	
+					=> c not in CommandesLivrees.commandes.t'
 	}  
 }
 
@@ -90,7 +92,9 @@ fun distance[p1:Case, p2:Case]: Int {
 // Contraintes statiques
 pred pasDeplacementDrone[t, t' : Time, d:Drone] {	d.position.t = d.position.t' }
 
-pred pasChangementCommande[t, t' : Time, d:Drone] {	d.commande.t = d.commande.t' }
+pred pasChangementCommande[t, t' : Time, d:Drone] {
+	d.commande.t = d.commande.t'
+}
 
 pred pasDeCommandeLivree[t, t' : Time, d:Drone] { d.commande.t not in CommandesLivrees.commandes.t'}
 
@@ -219,6 +223,7 @@ fact Simulation
 }
 
 pred init [t: Time] {
+
 	//aucune commande n'est livrée
 	CommandesLivrees.commandes.t = none
 
@@ -241,5 +246,5 @@ pred a {}
 
 //run a for 4 but exactly 2 Drone, exactly 2 Commande, 4 Case, exactly 20 Time
 //check commandesLivrees for 4 but exactly 3 Drone, exactly 4 Commande, exactly 20 Time
-//run a for 6 but exactly 2 Drone, exactly 15 Time, 2 Commande, 5 Int
-run a for exactly 2 Drone, exactly 6 Time, exactly 2 Commande, exactly 2 Case, exactly 1 Receptacle, 5 int
+run a for 6 but exactly 2 Drone, exactly 15 Time, 3 Commande, 5 Int, exactly 3 Case
+//run a for exactly 2 Drone, exactly 6 Time, exactly 2 Commande, exactly 2 Case, exactly 1 Receptacle, 5 int
